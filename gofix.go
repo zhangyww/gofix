@@ -160,7 +160,7 @@ func FixFile(path string, pathLevel int) error {
 	for {
 		line, err := fileReader.ReadString('\n')
 		if err == io.EOF {
-			//fmt.Print(line)
+			FixLine(line, pathLevel, &fileState)
 			break
 		}
 		if err != nil {
