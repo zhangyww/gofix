@@ -23,6 +23,7 @@ type FileState struct {
 
 var rootDir string
 var moduleName string
+var oldModuleName string
 
 var fileBuffer bytes.Buffer
 var importPathBuffer bytes.Buffer
@@ -32,6 +33,7 @@ var pathRel = [MAX_PATH_LEVEL]string{}
 func main() {
 
 	flag.StringVar(&rootDir, "dir", "./", "specify the root dir of your module")
+	flag.StringVar(&oldModuleName, "old", "", "specify the old moudle name you want to replace with")
 	flag.Parse()
 	
 	others := flag.Args()
@@ -53,8 +55,14 @@ func main() {
 	}
 	
 	ReadModuleName(gomodfile)
-	
-	fmt.Printf("module : %d\n", len([]rune(moduleName)))
+
+	if oldModuleName != "" {
+		fmt.Printf("old module name: %s\n", oldModuleName)
+		if !strings.HasSuffix(oldModuleName, "/") {
+			oldModuleName = oldModuleName + "/"
+		}
+	}
+	fmt.Printf("current module name: %s\n", moduleName)
 	//fmt.Println(flag.NArg())
 	
 	fileBuffer.Grow(4096)
@@ -369,7 +377,19 @@ func FixLine(line string, pathLevel int, fileState *FileState) {
 func FixImportPath(importPath string, pathLevel int) {
 	path := filepath.Clean(importPath)
 	path = strings.Replace(path, "\\", "/", -1)
-	
+
+	if oldModuleName != "" {
+		if strings.HasPrefix(path, oldModuleName) {
+			fileBuffer.WriteString(moduleName)
+			if !strings.HasSuffix(moduleName,"/") {
+				fileBuffer.WriteRune('/')
+			}
+			pathSuffix := strings.TrimPrefix(path, oldModuleName)
+			fileBuffer.WriteString(pathSuffix)
+			return
+		}
+	}
+
 	tokens := strings.Split(path, "/")
 	backCount := 0
 	for i := range tokens {
